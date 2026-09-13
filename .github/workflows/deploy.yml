@@ -1,0 +1,100 @@
+name: Test, Build, and Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run website tests
+        run: npm test
+
+  build:
+    name: Build and package
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Build deployment package
+        run: npm run build
+      - name: Upload deployment package
+        uses: actions/upload-artifact@v4
+        with:
+          name: website-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy:
+    name: Deploy to AWS
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    environment:
+      name: production
+      url: ${{ vars.CLOUDFRONT_URL }}
+    steps:
+      - name: Download deployment package
+        uses: actions/download-artifact@v4
+        with:
+          name: website-${{ github.sha }}
+          path: dist/
+      - name: Configure AWS credentials with OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      - name: Deploy package to Amazon S3
+        run: |
+          aws s3 sync dist/ "s3://${{ vars.S3_BUCKET }}/" \
+            --delete \
+            --cache-control "public,max-age=300"
+          aws s3 cp dist/index.html "s3://${{ vars.S3_BUCKET }}/index.html" \
+            --cache-control "no-cache,no-store,must-revalidate" \
+            --content-type "text/html"
+      - name: Invalidate and wait for CloudFront
+        env:
+          DISTRIBUTION_ID: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
+        run: |
+          INVALIDATION_ID=$(aws cloudfront create-invalidation \
+            --distribution-id "$DISTRIBUTION_ID" \
+            --paths "/*" \
+            --query "Invalidation.Id" \
+            --output text)
+          aws cloudfront wait invalidation-completed \
+            --distribution-id "$DISTRIBUTION_ID" \
+            --id "$INVALIDATION_ID"
+      - name: Verify public deployment
+        env:
+          WEBSITE_URL: ${{ vars.CLOUDFRONT_URL }}
+        run: |
+          EXPECTED_VERSION=$(node --input-type=module -e \
+            "import { readFileSync } from 'node:fs'; const html = readFileSync('dist/index.html', 'utf8'); console.log(html.match(/id=\"version\">([^<]+)/)[1]);")
+          curl --fail --silent --show-error \
+            --retry 10 --retry-delay 5 --retry-all-errors \
+            "$WEBSITE_URL" |
+            grep --fixed-strings "id=\"version\">$EXPECTED_VERSION"
