@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-STACK_NAME="${STACK_NAME:-aws-cicd-website}"
+STACK_NAME="${STACK_NAME:-devops-cicd-demo}"
 AWS_REGION="${AWS_REGION:-us-east-1}"
-GITHUB_REPOSITORY="${GITHUB_REPOSITORY:-aws-cicd-website}"
+GITHUB_REPOSITORY="${GITHUB_REPOSITORY:-devops-cicd-demo}"
 
 for command in aws gh; do
   if ! command -v "$command" >/dev/null 2>&1; then

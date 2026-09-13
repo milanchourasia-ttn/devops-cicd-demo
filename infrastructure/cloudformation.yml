@@ -7,7 +7,7 @@ Parameters:
     Description: GitHub account or organization that owns the repository.
   GitHubRepository:
     Type: String
-    Default: aws-cicd-website
+    Default: devops-cicd-demo
     AllowedPattern: "[A-Za-z0-9_.-]+"
   ExistingGitHubOidcProviderArn:
     Type: String

@@ -25,7 +25,7 @@ Prerequisites:
 
 - AWS CLI authenticated to the target account
 - GitHub CLI authenticated to the repository owner
-- The `aws-cicd-website` GitHub repository created and selected as the current remote
+- The `devops-cicd-demo` GitHub repository created and selected as the current remote
 
 Deploy the CloudFormation stack and configure the GitHub Actions repository variables:
 
@@ -47,5 +47,5 @@ checks that the public page contains the deployed version.
 
 CloudFormation retains the versioned S3 bucket to prevent accidental data loss. After the
 assignment is reviewed, empty the bucket (including object versions), change its retention policy
-if needed, and delete the `aws-cicd-website` stack. CloudFront and S3 usage can incur charges when
+if needed, and delete the `devops-cicd-demo` stack. CloudFront and S3 usage can incur charges when
 outside the allowances applicable to the AWS account.
