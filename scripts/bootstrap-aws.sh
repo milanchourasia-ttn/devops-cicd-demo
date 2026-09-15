@@ -16,14 +16,14 @@ GITHUB_OWNER=$(gh api user --jq .login)
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 OIDC_PROVIDER_ARN="arn:aws:iam::${AWS_ACCOUNT_ID}:oidc-provider/token.actions.githubusercontent.com"
 PARAMETERS=(
-  "ParameterKey=GitHubOwner,ParameterValue=${GITHUB_OWNER}"
-  "ParameterKey=GitHubRepository,ParameterValue=${GITHUB_REPOSITORY}"
+  "GitHubOwner=${GITHUB_OWNER}"
+  "GitHubRepository=${GITHUB_REPOSITORY}"
 )
 
 if aws iam get-open-id-connect-provider \
   --open-id-connect-provider-arn "$OIDC_PROVIDER_ARN" >/dev/null 2>&1; then
   PARAMETERS+=(
-    "ParameterKey=ExistingGitHubOidcProviderArn,ParameterValue=${OIDC_PROVIDER_ARN}"
+    "ExistingGitHubOidcProviderArn=${OIDC_PROVIDER_ARN}"
   )
 fi
 
