@@ -25,10 +25,3 @@ jobs:
           aws s3 cp index.html s3://${{ secrets.S3_BUCKET }}/index.html --content-type "text/html"
           aws s3 cp style.css s3://${{ secrets.S3_BUCKET }}/style.css --content-type "text/css"
           aws s3 cp script.js s3://${{ secrets.S3_BUCKET }}/script.js --content-type "application/javascript"
-
-      - name: Invalidate CloudFront cache
-        continue-on-error: true
-        run: |
-          aws cloudfront create-invalidation \
-            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
-            --paths "/*"
